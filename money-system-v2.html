@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My Money System</title>
+<style>
+:root{--bg:#eef2f4;--surf:#fff;--ink:#17222d;--mute:#5d6b78;--line:#d5dde3;--acc:#0f766e;--acc2:#e7f4f2;--warn:#b45309;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1820;--surf:#17232e;--ink:#e8eef2;--mute:#93a3b1;--line:#2a3a47;--acc:#4fd1c0;--acc2:#12312f;--warn:#f0a35a;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,"Segoe UI",Roboto,sans-serif}
+main{max-width:720px;margin:0 auto;padding:18px 14px 60px}
+h1{font-size:26px;font-weight:800;margin:4px 0 2px}
+h2{font-size:17px;font-weight:700;margin:0 0 10px}
+section{background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+label{display:block;font-size:13px;color:var(--mute);margin-bottom:3px}
+input,select,textarea{width:100%;font:inherit;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button{font:inherit;font-weight:600;padding:10px 14px;border:0;border-radius:8px;background:var(--acc);color:var(--surf);cursor:pointer;margin:10px 8px 0 0}
+button.ghost{background:transparent;color:var(--mute);border:1px solid var(--line);padding:3px 9px;margin:0;font-weight:400;font-size:13px}
+button.alt{background:transparent;color:var(--acc);border:1px solid var(--acc)}
+.split{display:grid;grid-template-columns:1fr auto;gap:3px 12px;margin-top:10px;font-size:15px}
+.split b{text-align:right}
+.note{margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--acc2);font-size:14px}
+.note.warn{background:transparent;border:1px solid var(--warn);color:var(--warn)}
+.bucket{padding:11px 0;border-top:1px solid var(--line)}
+.bucket:first-child{border-top:0;padding-top:0}
+.bhead{display:flex;justify-content:space-between;gap:8px;font-weight:600}
+.bsub{font-size:13px;color:var(--mute)}
+.bar{height:10px;border-radius:5px;background:var(--bg);margin:6px 0 4px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--acc)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--bg);border-radius:8px;padding:10px}
+.stat b{display:block;font-size:20px}
+.stat span{font-size:13px;color:var(--mute)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{padding:6px 4px;border-top:1px solid var(--line);text-align:right;white-space:nowrap}
+th{color:var(--mute);font-weight:400;border-top:0}
+td:first-child,th:first-child{text-align:left}
+.scroll{overflow-x:auto}
+summary{cursor:pointer;font-weight:700}
+</style>
+</head>
+<body>
+<main>
+<h1>My Money System</h1>
+<div id="plan" class="note"></div>
+
+<section>
+<h2>Today’s earnings</h2>
+<div class="row">
+<div><label for="date">Date</label><input type="date" id="date"></div>
+<div><label for="amt">Earned (KSh)</label><input type="number" id="amt" inputmode="numeric" min="0" placeholder="1000"></div>
+</div>
+<div id="preview"></div>
+<button id="save">Save this day</button>
+</section>
+
+<section><h2>Your goals</h2><div id="buckets"></div></section>
+
+<section>
+<h2>Tuesday merry-go-round</h2>
+<div class="row">
+<div><label for="owed">Amount due on Tuesday (KSh)</label><input type="number" id="owed" inputmode="numeric"></div>
+<div><label>Days until Tuesday</label><div id="tdays" style="padding:9px 0;font-weight:700"></div></div>
+</div>
+<div id="tmsg"></div>
+</section>
+
+<section><h2>How you’re doing</h2><div class="stats" id="stats"></div><div id="smokemsg" class="note"></div></section>
+
+<section>
+<h2>Take money out</h2>
+<div class="row">
+<div><label for="wb">From</label><select id="wb"></select></div>
+<div><label for="wa">Amount (KSh)</label><input type="number" id="wa" inputmode="numeric" min="0"></div>
+</div>
+<button id="out">Record payout</button>
+<div id="wmsg" class="bsub" style="margin-top:8px"></div>
+</section>
+
+<section>
+<details>
+<summary>Add your own goal</summary>
+<div class="row" style="margin-top:10px">
+<div><label for="gn">Name</label><input id="gn" placeholder="Laptop repair"></div>
+<div><label for="gt">Target (KSh)</label><input type="number" id="gt" inputmode="numeric"></div>
+<div><label for="gp">% of leftover each day</label><input type="number" id="gp" inputmode="numeric" min="0" max="100" value="20"></div>
+</div>
+<button id="gadd">Add goal</button>
+<div id="glist" style="margin-top:12px"></div>
+</details>
+</section>
+
+<section><h2>History</h2><div class="scroll"><table id="hist"></table></div></section>
+
+<section>
+<details>
+<summary>Settings</summary>
+<div class="row" style="margin-top:12px">
+<div><label for="s_mgr">Merry-go-round per day</label><input type="number" id="s_mgr" inputmode="numeric"></div>
+<div><label for="s_smoke">Smoking per day</label><input type="number" id="s_smoke" inputmode="numeric"></div>
+<div><label for="s_phone">Phone debt total</label><input type="number" id="s_phone" inputmode="numeric"></div>
+<div><label for="s_st">Already paid or set aside for phone</label><input type="number" id="s_st" inputmode="numeric"></div>
+<div><label for="s_dl">Phone deadline</label><input type="date" id="s_dl"></div>
+<div><label for="s_et">Emergency fund goal</label><input type="number" id="s_et" inputmode="numeric"></div>
+<div><label for="s_ep">% of leftover to emergency fund</label><input type="number" id="s_ep" inputmode="numeric" min="0" max="100"></div>
+</div>
+<button id="ssave">Save settings</button>
+</details>
+</section>
+
+<section>
+<details>
+<summary>Backup and restore</summary>
+<p class="bsub">Your data lives in this browser only. Back it up every few days.</p>
+<button id="bdl">Download backup file</button>
+<button id="bcsv" class="alt">Download history (CSV)</button>
+<label for="bfile" style="margin-top:14px">Restore from a backup file</label>
+<input type="file" id="bfile" accept=".json,application/json">
+<label for="btxt" style="margin-top:14px">Or copy and paste backup text</label>
+<textarea id="btxt" rows="4"></textarea>
+<button id="bcopy" class="alt">Show and copy text</button>
+<button id="brest" class="alt">Restore from text</button>
+<div id="bmsg" class="bsub" style="margin-top:8px"></div>
+<button id="reset" class="ghost" style="margin-top:16px">Clear all history</button>
+</details>
+</section>
+</main>
+
+<script>
+var KEY="jayson-money-v1";
+var DEF={set:{mgr:500,phone:8500,dl:"2026-12-06",et:6000,ep:40,st:0,smoke:150,owed:6500},goals:[],log:[]};
+var S;
+try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){S=null}
+function norm(o){
+  o=o&&typeof o==="object"?o:{};
+  return{set:Object.assign({},DEF.set,o.set||{}),goals:Array.isArray(o.goals)?o.goals:[],log:Array.isArray(o.log)?o.log:[]};
+}
+S=norm(S);
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+var $=function(i){return document.getElementById(i)};
+var fmt=function(n){return "KSh "+Math.round(n).toLocaleString("en-KE")};
+var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})};
+function iso(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function today(){return iso(new Date())}
+function daysTo(a,b){return Math.ceil((new Date(a)-new Date(b))/864e5)}
+function allKeys(){return["mgr","phone","emer"].concat(S.goals.map(function(g){return g.id})).concat(["spend"])}
+function totals(){
+  var t={};allKeys().forEach(function(k){t[k]=0});t.phone=S.set.st;
+  S.log.forEach(function(e){for(var k in e.a){if(k in t)t[k]+=e.a[k]}});
+  return t;
+}
+function phoneNeed(date,t){
+  var rem=Math.max(0,S.set.phone-t.phone),d=Math.max(1,daysTo(S.set.dl,date));
+  return Math.ceil(rem/d/10)*10;
+}
+function alloc(amount,date){
+  var t=totals(),s=S.set,left=amount,a={};
+  var need=phoneNeed(date,t),remPhone=Math.max(0,s.phone-t.phone);
+  a.mgr=Math.min(left,s.mgr);left-=a.mgr;
+  a.phone=Math.min(left,need,remPhone);left-=a.phone;
+  var base=left;
+  a.emer=Math.min(Math.round(base*s.ep/100),Math.max(0,s.et-t.emer),left);left-=a.emer;
+  S.goals.forEach(function(g){
+    var x=Math.min(Math.round(base*g.pct/100),Math.max(0,g.target-t[g.id]),left);
+    a[g.id]=x;left-=x;
+  });
+  a.spend=left;
+  return{a:a,need:s.mgr+need};
+}
+function names(){var n={mgr:"Merry-go-round",phone:"Phone debt",emer:"Emergency fund",spend:"Spending money"};S.goals.forEach(function(g){n[g.id]=g.name});return n}
+function nextTuesday(){var d=new Date(),n=(2-d.getDay()+7)%7;return n}
+function preview(){
+  var v=Number($("amt").value);
+  if(!v||v<0){$("preview").innerHTML="";return}
+  var r=alloc(v,$("date").value||today()),N=names(),h='<div class="split">';
+  allKeys().forEach(function(k){if(r.a[k]!==undefined)h+="<span>"+esc(N[k])+"</span><b>"+fmt(r.a[k])+"</b>"});
+  h+="</div>";
+  var saved=v-r.a.spend,short=r.need-(r.a.mgr+r.a.phone);
+  if(short>0)h+='<div class="note warn">Short by '+fmt(short)+' on today’s required savings. Cut spending and make it up tomorrow.</div>';
+  else{
+    var after=r.a.spend-S.set.smoke;
+    h+='<div class="note">Spending money today: '+fmt(r.a.spend)+'. '+(after>=0?"After smoking ("+fmt(S.set.smoke)+") you have "+fmt(after)+" for food and fares.":"Smoking ("+fmt(S.set.smoke)+") is more than your spending money. Cut it back today.")+"</div>";
+  }
+  $("preview").innerHTML=h;
+}
+function bucket(name,saved,goal,sub){
+  var pct=goal>0?Math.min(100,saved/goal*100):0;
+  return'<div class="bucket"><div class="bhead"><span>'+esc(name)+"</span><span>"+fmt(saved)+(goal>0?" of "+fmt(goal):"")+'</span></div>'+(goal>0?'<div class="bar"><i style="width:'+pct+'%"></i></div>':"")+'<div class="bsub">'+sub+"</div></div>";
+}
+function render(){
+  var t=totals(),s=S.set,N=names(),td=today(),days=Math.max(0,daysTo(s.dl,td));
+  var remPhone=Math.max(0,s.phone-t.phone),pn=phoneNeed(td,t);
+  $("plan").innerHTML="<b>Set aside every day:</b> "+fmt(s.mgr)+" for the merry-go-round and "+fmt(pn)+" for the phone, "+fmt(s.mgr+pn)+" in total. "+(days?days+" days left to clear the phone.":"The phone deadline has arrived.");
+  var h=bucket("Merry-go-round",t.mgr,0,"Held for your Tuesday payout. Don’t touch it.");
+  h+=bucket("Phone debt",t.phone,s.phone,remPhone>0?fmt(remPhone)+" left, about "+fmt(pn)+" a day for "+days+" days":"Cleared. Well done.");
+  h+=bucket("Emergency fund",t.emer,s.et,"Your safety net for sudden costs.");
+  S.goals.forEach(function(g){h+=bucket(g.name,t[g.id],g.target,g.pct+"% of leftover money each day")});
+  h+=bucket("Spending money",t.spend,0,"What is left after the savings are set aside.");
+  $("buckets").innerHTML=h;
+  var tn=nextTuesday();
+  $("owed").value=s.owed;$("tdays").textContent=tn===0?"Today":tn+(tn===1?" day":" days");
+  var gap=s.owed-t.mgr;
+  $("tmsg").innerHTML='<div class="note'+(gap>0?" warn":"")+'">'+(gap>0?"You hold "+fmt(t.mgr)+" and owe "+fmt(s.owed)+". Short by "+fmt(gap)+". Tell your partner early if you can’t cover it.":"You hold "+fmt(t.mgr)+". The "+fmt(s.owed)+" you owe is covered.")+"</div>";
+  var ins=S.log.filter(function(e){return e.type==="in"}),dates={},sum=0,best=0,wk=0,wkStart=iso(new Date(Date.now()-6*864e5));
+  ins.forEach(function(e){dates[e.date]=1;sum+=e.earned;if(e.earned>best)best=e.earned;if(e.date>=wkStart)wk+=e.earned});
+  var nd=Object.keys(dates).length;
+  $("stats").innerHTML=[["Days logged",nd],["Average per day",nd?fmt(sum/nd):"-"],["Last 7 days",fmt(wk)],["Best day",best?fmt(best):"-"],["Total earned",fmt(sum)],["Total saved (all goals)",fmt(t.mgr+t.phone+t.emer+S.goals.reduce(function(x,g){return x+t[g.id]},0))]].map(function(x){return'<div class="stat"><b>'+x[1]+"</b><span>"+x[0]+"</span></div>"}).join("");
+  $("smokemsg").textContent="At "+fmt(s.smoke)+" a day, smoking will cost about "+fmt(s.smoke*days)+" before the phone deadline. Every 50 a day you cut frees "+fmt(50*days)+".";
+  var opts="";allKeys().forEach(function(k){if(k!=="phone")opts+='<option value="'+k+'">'+esc(N[k])+"</option>"});
+  var cur=$("wb").value;$("wb").innerHTML=opts;if(cur)$("wb").value=cur;
+  $("glist").innerHTML=S.goals.map(function(g){return'<div class="bhead" style="margin-top:6px"><span>'+esc(g.name)+'</span><button class="ghost" data-g="'+g.id+'">Remove</button></div>'}).join("");
+  var cols=["mgr","phone","emer"],rows="<tr><th>Date</th><th>Earned</th><th>Merry</th><th>Phone</th><th>Emerg.</th><th>Other</th><th>Spend</th><th></th></tr>";
+  S.log.slice().reverse().forEach(function(e,i){
+    var idx=S.log.length-1-i,other=0;
+    for(var k in e.a){if(cols.indexOf(k)<0&&k!=="spend")other+=e.a[k]}
+    rows+="<tr><td>"+esc(e.date)+"</td><td>"+(e.type==="out"?"payout":Math.round(e.earned))+"</td><td>"+Math.round(e.a.mgr||0)+"</td><td>"+Math.round(e.a.phone||0)+"</td><td>"+Math.round(e.a.emer||0)+"</td><td>"+Math.round(other)+"</td><td>"+Math.round(e.a.spend||0)+'</td><td><button class="ghost" data-del="'+idx+'" aria-label="Delete entry">x</button></td></tr>';
+  });
+  $("hist").innerHTML=S.log.length?rows:"<tr><td>No days saved yet. Enter today’s earnings above.</td></tr>";
+  $("s_mgr").value=s.mgr;$("s_smoke").value=s.smoke;$("s_phone").value=s.phone;$("s_st").value=s.st;$("s_dl").value=s.dl;$("s_et").value=s.et;$("s_ep").value=s.ep;
+  preview();
+}
+$("date").value=today();
+$("amt").addEventListener("input",preview);
+$("date").addEventListener("change",preview);
+$("save").onclick=function(){
+  var v=Number($("amt").value);if(!v||v<0)return;
+  var d=$("date").value||today(),r=alloc(v,d);
+  S.log.push({date:d,earned:v,a:r.a,type:"in"});persist();$("amt").value="";render();
+};
+$("out").onclick=function(){
+  var v=Number($("wa").value),b=$("wb").value,t=totals();
+  if(!v||v<0)return;
+  if(v>t[b]){$("wmsg").textContent="That is more than the "+fmt(t[b])+" you have there.";return}
+  var a={};a[b]=-v;S.log.push({date:today(),earned:0,a:a,type:"out"});
+  persist();$("wa").value="";$("wmsg").textContent="Recorded.";render();
+};
+$("owed").onchange=function(){S.set.owed=Number($("owed").value)||0;persist();render()};
+$("ssave").onclick=function(){
+  var s=S.set;
+  s.mgr=Number($("s_mgr").value)||0;s.smoke=Number($("s_smoke").value)||0;s.phone=Number($("s_phone").value)||0;s.st=Number($("s_st").value)||0;
+  s.dl=$("s_dl").value||DEF.set.dl;s.et=Number($("s_et").value)||0;s.ep=Math.min(100,Math.max(0,Number($("s_ep").value)||0));
+  persist();render();
+};
+$("gadd").onclick=function(){
+  var n=$("gn").value.trim(),tg=Number($("gt").value),p=Math.min(100,Math.max(0,Number($("gp").value)||0));
+  if(!n||!tg)return;
+  S.goals.push({id:"g"+Date.now(),name:n,target:tg,pct:p});persist();$("gn").value="";$("gt").value="";render();
+};
+document.addEventListener("click",function(e){
+  var d=e.target.getAttribute("data-del"),g=e.target.getAttribute("data-g");
+  if(d!==null){S.log.splice(Number(d),1);persist();render()}
+  if(g!==null&&confirm("Remove this goal? Money already saved for it stays in your history.")){S.goals=S.goals.filter(function(x){return x.id!==g});persist();render()}
+});
+$("reset").onclick=function(){if(confirm("Clear all saved days? This cannot be undone.")){S.log=[];persist();render()}};
+function download(name,text,type){
+  var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type:type}));a.download=name;
+  document.body.appendChild(a);a.click();a.remove();
+}
+$("bdl").onclick=function(){download("money-backup-"+today()+".json",JSON.stringify(S),"application/json");$("bmsg").textContent="Backup downloaded."};
+$("bcsv").onclick=function(){
+  var k=allKeys(),c="date,type,earned,"+k.join(",")+"\n";
+  S.log.forEach(function(e){c+=[e.date,e.type,e.earned].concat(k.map(function(x){return e.a[x]||0})).join(",")+"\n"});
+  download("money-history-"+today()+".csv",c,"text/csv");
+};
+function restore(txt){
+  try{var o=JSON.parse(txt);if(!o||!o.set||!Array.isArray(o.log))throw 0;
+    if(!confirm("Replace everything in this app with the backup?"))return;
+    S=norm(o);persist();render();$("bmsg").textContent="Backup restored."}
+  catch(e){$("bmsg").textContent="That doesn’t look like a valid backup."}
+}
+$("bfile").onchange=function(){var f=this.files[0];if(!f)return;var r=new FileReader();r.onload=function(){restore(r.result)};r.readAsText(f)};
+$("bcopy").onclick=function(){
+  $("btxt").value=JSON.stringify(S);$("btxt").select();
+  try{navigator.clipboard.writeText($("btxt").value);$("bmsg").textContent="Copied. Paste it into a note or message to yourself."}catch(e){$("bmsg").textContent="Select the text and copy it."}
+};
+$("brest").onclick=function(){restore($("btxt").value)};
+render();
+</script>
+</body>
+</html>
